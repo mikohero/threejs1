@@ -10,7 +10,7 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
 var buttons = document.getElementsByTagName("button");
 
 var select = document.getElementById('models') as HTMLSelectElement;
-//var value = select.options[select.selectedIndex].value;
+var value = ''
 
 for (let i = 0; i < buttons.length; i++) {
   buttons[i].addEventListener("click", onButtonClick, false);
@@ -19,7 +19,10 @@ for (let i = 0; i < buttons.length; i++) {
 function onButtonClick() {
     console.log('button: '+counter1.model)
     let s = select.options[select.selectedIndex].value;
+    value = s.substr(s.lastIndexOf('.') + 1);
     counter1.model = s
+    console.log('button: '+counter1.model)
+    console.log("fileextension: "+value);
   loadModel();
 }
 
@@ -42,7 +45,7 @@ scene.add( directionalLight1 );
 
 const camera = new THREE.PerspectiveCamera(
     75,
-    window.innerWidth / window.innerHeight,
+    2,
     0.1,
     1000
 )
@@ -50,7 +53,7 @@ camera.position.z = 5
 camera.position.y = 2
 const canvas1 = document.getElementById('artifactCanvas') as HTMLCanvasElement
 const renderer = new THREE.WebGLRenderer( { canvas: canvas1 })
-renderer.setSize(400, 300)
+//renderer.setSize(400, 300)
 renderer.physicallyCorrectLights = true
 // renderer.shadowMap.enabled = true
 renderer.outputEncoding = THREE.sRGBEncoding
@@ -68,28 +71,35 @@ function loadModel() {
     scene.remove(model1)
     let mymodel = counter1.model
     console.log('Modelname is: '+mymodel)
-    loader.load(
+
+    if ((value == 'obj')|| (value == 'OBJ')){
+        objLoader.load(mymodel , function ( obj ) {
+
+            //waltHead = obj;
+            //waltHead.scale.multiplyScalar( 1.5 );
+            //waltHead.position.set( 400, 0, 0 );
+            model1 = obj
+            scene.add( model1 )
+
+        },
+        // called when loading is in progresses
+        function ( xhr ) {
+    
+            console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+    
+        },
+        // called when loading has errors
+        function ( error ) {
+    
+            console.log( 'An error happened' );
+    
+        } 
+        );
+    }else {
+        loader.load(
         mymodel,
         function (gltf) {
-            // gltf.scene.traverse(function (child) {
-            //     if ((child as THREE.Mesh).isMesh) {
-            //         const m = (child as THREE.Mesh)
-            //         m.receiveShadow = true
-            //         m.castShadow = true
-            //     }
-            //     if (((child as THREE.Light)).isLight) {
-            //         const l = (child as THREE.Light)
-            //         l.castShadow = true
-            //         l.shadow.bias = -.003
-            //         l.shadow.mapSize.width = 2048
-            //         l.shadow.mapSize.height = 2048
-            //     }
-            // })
-            /*
-            gltf.scene.scale.multiplyScalar(1 / 100); // adjust scalar factor to match your scene scale
-            gltf.scene.position.x = 0; // once rescaled, position the model where needed
-            gltf.scene.position.z = 0;
-            */
+            
             model1 = gltf.scene
             
             scene.add(model1)
@@ -104,15 +114,28 @@ function loadModel() {
             
         }
         
-    )
+        )
+    }
 
 }
 
+function resizeCanvasToDisplaySize() {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (canvas.width !== width ||canvas.height !== height) {
+      // you must pass false here or three.js sadly fights the browser
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+  
+      // set render target sizes here
+    }
+  }
+
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
+    resizeCanvasToDisplaySize();
     render()
 }
 onWindowResize()
@@ -143,6 +166,7 @@ function animate() {
 
     controls.update()
     //stats.update()
+    resizeCanvasToDisplaySize();
 
     render()
 
